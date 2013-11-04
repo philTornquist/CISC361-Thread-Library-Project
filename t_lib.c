@@ -10,7 +10,7 @@
 #include <signal.h>
 
 #define LEVEL_2_QUEUE 1
-//#define ROUND_ROBIN 1
+#define ROUND_ROBIN 1
 
 struct tcb {
   int         thread_id;
@@ -118,9 +118,10 @@ int t_create(void (*fct)(void), int id, int pri)
   uc->thread_id = id;
 
   getcontext(&uc->thread_context);
-  uc->thread_context.uc_stack.ss_sp = mmap(0, sz,
-       PROT_READ | PROT_WRITE | PROT_EXEC,
-       MAP_PRIVATE | MAP_ANON, -1, 0);
+  //uc->thread_context.uc_stack.ss_sp = mmap(0, sz,
+  //     PROT_READ | PROT_WRITE | PROT_EXEC,
+ //      MAP_PRIVATE | MAP_ANON, -1, 0);
+  uc->thread_context.uc_stack.ss_sp = malloc(sz);
   uc->thread_context.uc_stack.ss_size = sz;
   uc->thread_context.uc_stack.ss_flags = 0;
   makecontext(&uc->thread_context, fct, 1, id);
