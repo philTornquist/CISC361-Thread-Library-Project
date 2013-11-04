@@ -1,4 +1,11 @@
 /*
+ Phil Tornquist
+ Sean Moir
+ CISC361-010
+ t_lib.h
+*/
+
+/*
  * types used by thread library
  */
 
