@@ -9,27 +9,32 @@ struct tcb {
 
 typedef struct tcb tcb;
 
+void t_queue(tcb *thread);
+
 tcb *running;
-tcb *ready;
+tcb *end_queue;
 
 void t_yield()
 {
   tcb *tmp;
 
   tmp = running;
-  running = ready;
-  ready = tmp;
+  running = running->next;
+  t_queue(tmp);
 
-  swapcontext(&ready->thread_context, &running->thread_context);
+  swapcontext(&tmp->thread_context, &running->thread_context);
 }
 
 void t_init()
 {
   tcb *tmp;
   tmp = (tcb *) malloc(sizeof(tcb));
+  tmp->next = NULL;
 
   getcontext(&tmp->thread_context);    /* let tmp be the context of main() */
   running = tmp;
+
+  end_queue = tmp;
 }
 
 int t_create(void (*fct)(void), int id, int pri)
@@ -47,5 +52,13 @@ int t_create(void (*fct)(void), int id, int pri)
   uc->thread_context.uc_stack.ss_flags = 0;
   uc->thread_context.uc_link = &running->thread_context; 
   makecontext(&uc->thread_context, fct, 1, id);
-  ready = uc;
+  t_queue(uc);
+}
+
+void t_queue(tcb *thread)
+{
+  /* Add thread to end of ready queue */
+  end_queue->next = thread;
+  end_queue = thread;
+  end_queue->next = NULL;
 }
