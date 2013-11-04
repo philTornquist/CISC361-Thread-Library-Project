@@ -12,12 +12,34 @@ typedef struct tcb tcb;
 tcb *running;
 tcb *end_queue;
 
+#ifdef LEVEL_2_QUEUE
+tcb *end_level0;
+#endif
+
 /* Add thread to end of ready queue */
 void t_queue(tcb *thread)
 {
+#ifdef LEVEL_2_QUEUE
+  if (thread->thread_priority == 1)
+  {
+    thread->next = end_level0->next;
+    end_level0->next = thread;
+    end_level0 = thread;
+
+    if (end_queue == NULL) end_queue = end_level0;
+  }
+  else if (thread->thread_priority == 0)
+  {
+    end_queue->next = thread;
+    end_queue = thread;
+    end_queue->next = NULL;
+  }
+
+#else
   end_queue->next = thread;
   end_queue = thread;
   end_queue->next = NULL;
+#endif
 }
 
 /* Initialize thread library */
@@ -26,12 +48,17 @@ void t_init()
   tcb *tmp;
   tmp = (tcb *) malloc(sizeof(tcb));
   tmp->next = NULL;
+  tmp->thread_priority = 1;
 
   /* let tmp be the context of main() */
   getcontext(&tmp->thread_context);
   running = tmp;
 
   end_queue = tmp;
+
+#ifdef LEVEL_2_QUEUE
+  end_level0 = NULL;
+#endif
 }
 
 /* Shut down thread library */
@@ -82,6 +109,13 @@ void t_yield()
 
   tmp = running;
   running = running->next;
+
+#ifdef LEVEL_2_QUEUE
+  //  level 0 queue is empty
+  if (end_level0 == tmp)
+    end_level0 = running;
+#endif
+
   t_queue(tmp);
 
   swapcontext(&tmp->thread_context, &running->thread_context);
