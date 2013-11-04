@@ -1,25 +1,34 @@
 #include "t_lib.h"
 
-ucontext_t *running;
-ucontext_t *ready;
+tcb *running;
+tcb *ready;
+
+struct tcb {
+  int         thread_id;
+  int         thread_priority;
+  ucontext_t  thread_context;
+  struct tcb *next;
+};
+
+typedef struct tcb tcb;
 
 void t_yield()
 {
-  ucontext_t *tmp;
+  tcb *tmp;
 
   tmp = running;
   running = ready;
   ready = tmp;
 
-  swapcontext(ready, running);
+  swapcontext(ready->thread_context, running->thread_context);
 }
 
 void t_init()
 {
-  ucontext_t *tmp;
-  tmp = (ucontext_t *) malloc(sizeof(ucontext_t));
+  tcb *tmp;
+  tmp = (tcb *) malloc(sizeof(tcb));
 
-  getcontext(tmp);    /* let tmp be the context of main() */
+  getcontext(tmp->thread_context);    /* let tmp be the context of main() */
   running = tmp;
 }
 
@@ -27,16 +36,16 @@ int t_create(void (*fct)(int), int id, int pri)
 {
   size_t sz = 0x10000;
 
-  ucontext_t *uc;
-  uc = (ucontext_t *) malloc(sizeof(ucontext_t));
+  tcb *uc;
+  uc = (tcb *) malloc(sizeof(tcb));
 
-  getcontext(uc);
-  uc->uc_stack.ss_sp = mmap(0, sz,
+  getcontext(uc->thread_context);
+  uc->thread_context->uc_stack.ss_sp = mmap(0, sz,
        PROT_READ | PROT_WRITE | PROT_EXEC,
        MAP_PRIVATE | MAP_ANON, -1, 0);
-  uc->uc_stack.ss_size = sz;
-  uc->uc_stack.ss_flags = 0;
-  uc->uc_link = running; 
-  makecontext(uc, fct, 1, id);
+  uc->thread_context->uc_stack.ss_size = sz;
+  uc->thread_context->uc_stack.ss_flags = 0;
+  uc->thread_context->uc_link = running; 
+  makecontext(uc->thread_context, fct, 1, id);
   ready = uc;
 }
