@@ -1,5 +1,7 @@
 #include "t_lib.h"
 
+#define LEVEL_2_QUEUE 1
+
 struct tcb {
   int         thread_id;
   int         thread_priority;
@@ -57,7 +59,7 @@ void t_init()
   end_queue = tmp;
 
 #ifdef LEVEL_2_QUEUE
-  end_level0 = NULL;
+  end_level0 = running;
 #endif
 }
 
@@ -109,6 +111,11 @@ void t_yield()
 
   tmp = running;
   running = running->next;
+
+  if (running == NULL) {
+    running = tmp;
+    return;
+  }
 
 #ifdef LEVEL_2_QUEUE
   //  level 0 queue is empty
