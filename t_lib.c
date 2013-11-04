@@ -72,7 +72,21 @@ void t_init()
 #endif
 
 #ifdef ROUND_ROBIN
-  signal(SIGALRM, t_yield);
+  struct sigaction  act, oact;
+
+  act.sa_handler = t_yield;
+  sigemptyset(&act.sa_mask);
+  act.sa_flags = 0;
+#ifdef  SA_INTERRUPT
+    act.sa_flags |= SA_INTERRUPT;
+#endif
+  } else {
+    act.sa_flags |= SA_RESTART;
+  if (sigaction(SIGALRM, &act, &oact) < 0)
+  {
+    printf("Couldn't setup signal handler\n");
+    exit(2);
+  }
   ualarm(1,1);
 #endif
 }
