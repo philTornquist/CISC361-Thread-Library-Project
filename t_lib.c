@@ -12,26 +12,29 @@ typedef struct tcb tcb;
 tcb *running;
 tcb *end_queue;
 
+/* Add thread to end of ready queue */
 void t_queue(tcb *thread)
 {
-  /* Add thread to end of ready queue */
   end_queue->next = thread;
   end_queue = thread;
   end_queue->next = NULL;
 }
 
+/* Initialize thread library */
 void t_init()
 {
   tcb *tmp;
   tmp = (tcb *) malloc(sizeof(tcb));
   tmp->next = NULL;
 
-  getcontext(&tmp->thread_context);    /* let tmp be the context of main() */
+  /* let tmp be the context of main() */
+  getcontext(&tmp->thread_context);
   running = tmp;
 
   end_queue = tmp;
 }
 
+/* Shut down thread library */
 void t_shutdown()
 {
   while (running != NULL) {
@@ -41,6 +44,7 @@ void t_shutdown()
   }
 }
 
+/* Create new thread */
 int t_create(void (*fct)(void), int id, int pri)
 {
   size_t sz = 0x10000;
@@ -59,6 +63,7 @@ int t_create(void (*fct)(void), int id, int pri)
   t_queue(uc);
 }
 
+/* Terminate currently running thread */
 int t_terminate()
 {
   tcb *tmp;
@@ -70,6 +75,7 @@ int t_terminate()
   setcontext(&running->thread_context);
 }
 
+/* Move currently running thread to end of ready queue, start up next ready thread */
 void t_yield()
 {
   tcb *tmp;
