@@ -8,7 +8,8 @@
 #include "t_lib.h"
 #include <signal.h>
 
-#define LEVEL_2_QUEUE 1
+//#define LEVEL_2_QUEUE 1
+#define ROUND_ROBIN 1
 
 struct tcb {
   int         thread_id;
