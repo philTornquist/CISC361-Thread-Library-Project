@@ -6,10 +6,11 @@
 */
 
 #include "t_lib.h"
+#include <pthread.h>
 #include <signal.h>
 
 //#define LEVEL_2_QUEUE 1
-#define ROUND_ROBIN 1
+//#define ROUND_ROBIN 1
 
 struct tcb {
   int         thread_id;
@@ -22,6 +23,8 @@ typedef struct tcb tcb;
 
 tcb *running;
 tcb *end_queue;
+
+pthread_mutex_t thread_queue_lock = PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef LEVEL_2_QUEUE
 tcb *end_level0;
@@ -105,6 +108,8 @@ void t_shutdown()
 /* Create new thread */
 int t_create(void (*fct)(void), int id, int pri)
 {
+  pthread_mutex_lock(&thread_queue_lock);
+  //printf("\nthread: %i\n\n", id);
   size_t sz = 0x10000;
 
   tcb *uc;
@@ -118,9 +123,9 @@ int t_create(void (*fct)(void), int id, int pri)
        MAP_PRIVATE | MAP_ANON, -1, 0);
   uc->thread_context.uc_stack.ss_size = sz;
   uc->thread_context.uc_stack.ss_flags = 0;
-  uc->thread_context.uc_link = &running->thread_context; 
   makecontext(&uc->thread_context, fct, 1, id);
   t_queue(uc);
+  pthread_mutex_unlock(&thread_queue_lock);
 }
 
 /* Terminate currently running thread */
@@ -138,6 +143,7 @@ int t_terminate()
 /* Move currently running thread to end of ready queue, start up next ready thread */
 void t_yield()
 {
+  pthread_mutex_lock(&thread_queue_lock);
   tcb *tmp;
 
   tmp = running;
@@ -145,6 +151,7 @@ void t_yield()
 
   if (running == NULL) {
     running = tmp;
+    pthread_mutex_unlock(&thread_queue_lock);
     return;
   }
 
@@ -155,6 +162,7 @@ void t_yield()
 #endif
 
   t_queue(tmp);
+  pthread_mutex_unlock(&thread_queue_lock);
 
   swapcontext(&tmp->thread_context, &running->thread_context);
 }
