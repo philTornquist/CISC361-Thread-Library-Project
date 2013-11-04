@@ -40,12 +40,12 @@ int t_create(void (*fct)(int), int id, int pri)
   uc = (tcb *) malloc(sizeof(tcb));
 
   getcontext(uc->thread_context);
-  uc->thread_context->uc_stack.ss_sp = mmap(0, sz,
+  uc->thread_context.uc_stack.ss_sp = mmap(0, sz,
        PROT_READ | PROT_WRITE | PROT_EXEC,
        MAP_PRIVATE | MAP_ANON, -1, 0);
-  uc->thread_context->uc_stack.ss_size = sz;
-  uc->thread_context->uc_stack.ss_flags = 0;
-  uc->thread_context->uc_link = running; 
+  uc->thread_context.uc_stack.ss_size = sz;
+  uc->thread_context.uc_stack.ss_flags = 0;
+  uc->thread_context.uc_link = running; 
   makecontext(uc->thread_context, fct, 1, id);
   ready = uc;
 }
