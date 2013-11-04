@@ -1,8 +1,5 @@
 #include "t_lib.h"
 
-tcb *running;
-tcb *ready;
-
 struct tcb {
   int         thread_id;
   int         thread_priority;
@@ -11,6 +8,9 @@ struct tcb {
 };
 
 typedef struct tcb tcb;
+
+tcb *running;
+tcb *ready;
 
 void t_yield()
 {
@@ -45,7 +45,7 @@ int t_create(void (*fct)(int), int id, int pri)
        MAP_PRIVATE | MAP_ANON, -1, 0);
   uc->thread_context.uc_stack.ss_size = sz;
   uc->thread_context.uc_stack.ss_flags = 0;
-  uc->thread_context.uc_link = running; 
+  uc->thread_context.uc_link = &running->thread_context; 
   makecontext(uc->thread_context, fct, 1, id);
   ready = uc;
 }
