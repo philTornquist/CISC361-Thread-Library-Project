@@ -1,26 +1,19 @@
 # Makefile for UD CISC361 user-level thread library
 
 CC = gcc
-CFLAGS = -g
+CFLAGS = -g -I.. -I.
 
 LIBOBJS = t_lib.o 
 
-TSTOBJS = test00.o 
-
-# specify the executable 
-
-EXECS = test00
-
 # specify the source files
-
 LIBSRCS = t_lib.c
 
-TSTSRCS = test00.c
 
-# ar creates the static thread library
+default: t_lib.a
 
 t_lib.a: ${LIBOBJS} Makefile
-	ar rcs t_lib.a ${LIBOBJS}
+	ar rcs t_lib.a ${LIBOBJS}	
+# ar creates the static thread library
 
 # here, we specify how each file should be compiled, what
 # files they depend on, etc.
@@ -28,11 +21,12 @@ t_lib.a: ${LIBOBJS} Makefile
 t_lib.o: t_lib.c t_lib.h Makefile
 	${CC} ${CFLAGS} -c t_lib.c
 
-test00.o: test00.c 361_thread.h Makefile
-	${CC} ${CFLAGS} -c test00.c
+tests: $(patsubst Tests/%.c, Tests/%, $(wildcard Tests/*.c))
 
-test00: test00.o t_lib.a Makefile
-	${CC} ${CFLAGS} test00.o t_lib.a -o test00
+Tests/%: Tests/%.c
+	$(CC) $(CFLAGS) -o $@ $< t_lib.a
 
 clean:
-	rm -f t_lib.a ${EXECS} ${LIBOBJS} ${TSTOBJS} 
+	rm -rf t_lib.a ${LIBOBJS} Tests/%
+
+.PHONY: clean default tests
