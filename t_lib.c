@@ -9,7 +9,7 @@
 #include <pthread.h>
 #include <signal.h>
 
-//#define LEVEL_2_QUEUE 1
+#define LEVEL_2_QUEUE 1
 //#define ROUND_ROBIN 1
 
 struct tcb {
@@ -40,7 +40,7 @@ void t_queue(tcb *thread)
     end_level0->next = thread;
     end_level0 = thread;
 
-    if (end_queue == NULL) end_queue = end_level0;
+    if (thread->next == NULL) end_queue = end_level0;
   }
   else if (thread->thread_priority == 0)
   {
