@@ -9,20 +9,15 @@ struct tcb {
 
 typedef struct tcb tcb;
 
-void t_queue(tcb *thread);
-
 tcb *running;
 tcb *end_queue;
 
-void t_yield()
+void t_queue(tcb *thread)
 {
-  tcb *tmp;
-
-  tmp = running;
-  running = running->next;
-  t_queue(tmp);
-
-  swapcontext(&tmp->thread_context, &running->thread_context);
+  /* Add thread to end of ready queue */
+  end_queue->next = thread;
+  end_queue = thread;
+  end_queue->next = NULL;
 }
 
 void t_init()
@@ -35,6 +30,15 @@ void t_init()
   running = tmp;
 
   end_queue = tmp;
+}
+
+void t_shutdown()
+{
+  while (running != NULL) {
+    tcb *tmp = running;
+    running = running->next;
+    free(tmp);
+  }
 }
 
 int t_create(void (*fct)(void), int id, int pri)
@@ -55,10 +59,24 @@ int t_create(void (*fct)(void), int id, int pri)
   t_queue(uc);
 }
 
-void t_queue(tcb *thread)
+int t_terminate()
 {
-  /* Add thread to end of ready queue */
-  end_queue->next = thread;
-  end_queue = thread;
-  end_queue->next = NULL;
+  tcb *tmp;
+
+  tmp = running;
+  running = running->next;
+  free(tmp);
+
+  setcontext(&running->thread_context);
+}
+
+void t_yield()
+{
+  tcb *tmp;
+
+  tmp = running;
+  running = running->next;
+  t_queue(tmp);
+
+  swapcontext(&tmp->thread_context, &running->thread_context);
 }
