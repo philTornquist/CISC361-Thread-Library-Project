@@ -1,4 +1,12 @@
+/*
+ Phil Tornquist
+ Sean Moir
+ CISC361-010
+ t_lib.c
+*/
+
 #include "t_lib.h"
+#include <signal.h>
 
 #define LEVEL_2_QUEUE 1
 
@@ -61,11 +69,21 @@ void t_init()
 #ifdef LEVEL_2_QUEUE
   end_level0 = running;
 #endif
+
+#ifdef ROUND_ROBIN
+  signal(SIGALRM, t_yield);
+  ualarm(1,1);
+#endif
 }
 
 /* Shut down thread library */
 void t_shutdown()
 {
+#ifdef ROUND_ROBIN
+  signal(SIGALRM, SIG_DFL);
+  ualarm(0,0);
+#endif
+
   while (running != NULL) {
     tcb *tmp = running;
     running = running->next;
@@ -80,6 +98,8 @@ int t_create(void (*fct)(void), int id, int pri)
 
   tcb *uc;
   uc = (tcb *) malloc(sizeof(tcb));
+  uc->thread_priority = pri;
+  uc->thread_id = id;
 
   getcontext(&uc->thread_context);
   uc->thread_context.uc_stack.ss_sp = mmap(0, sz,
