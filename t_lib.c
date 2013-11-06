@@ -6,7 +6,6 @@
 */
 
 #include "t_lib.h"
-#include <pthread.h>
 #include <signal.h>
 
 #define LEVEL_2_QUEUE 1
@@ -24,7 +23,12 @@ typedef struct tcb tcb;
 tcb *running;
 tcb *end_queue;
 
-pthread_mutex_t thread_queue_lock = PTHREAD_MUTEX_INITIALIZER;
+void sig_hand(int signo)
+{
+printf("signal\n");
+ualarm(10,10);
+t_yield();
+}
 
 #ifdef LEVEL_2_QUEUE
 tcb *end_level0;
@@ -34,7 +38,8 @@ tcb *end_level0;
 void t_queue(tcb *thread)
 {
 #ifdef LEVEL_2_QUEUE
-  if (thread->thread_priority == 1)
+  
+  if (thread->thread_priority == 0)
   {
     thread->next = end_level0->next;
     end_level0->next = thread;
@@ -42,12 +47,23 @@ void t_queue(tcb *thread)
 
     if (thread->next == NULL) end_queue = end_level0;
   }
-  else if (thread->thread_priority == 0)
+  else if (thread->thread_priority == 1)
   {
     end_queue->next = thread;
     end_queue = thread;
     end_queue->next = NULL;
   }
+  
+  tcb* tmp = running;
+  while (tmp != NULL)
+  {
+  	printf("%i,%i -> ", tmp->thread_id, tmp->thread_priority);
+  	if (tmp == end_level0)
+  		printf("end level 0");
+  	printf("\n");
+  	tmp = tmp->next;
+  }
+  printf("End Queue Post\n\n");
 
 #else
   end_queue->next = thread;
@@ -77,7 +93,7 @@ void t_init()
 #ifdef ROUND_ROBIN
   struct sigaction  act, oact;
 
-  act.sa_handler = t_yield;
+  act.sa_handler = sig_hand;
   sigemptyset(&act.sa_mask);
   act.sa_flags = 0;
   act.sa_flags |= SA_INTERRUPT;
@@ -86,7 +102,7 @@ void t_init()
     printf("Couldn't setup signal handler\n");
     exit(2);
   }
-  ualarm(1,1);
+  ualarm(10,10);
 #endif
 }
 
@@ -105,10 +121,17 @@ void t_shutdown()
   }
 }
 
+void start_thread(int id, void (*fct)(int))
+{
+printf("thread created\n");
+	sigrelse(SIGALRM);
+	fct(id);
+}
+
 /* Create new thread */
 int t_create(void (*fct)(void), int id, int pri)
 {
-  pthread_mutex_lock(&thread_queue_lock);
+  sighold(SIGALRM);
   //printf("\nthread: %i\n\n", id);
   size_t sz = 0x10000;
 
@@ -124,27 +147,30 @@ int t_create(void (*fct)(void), int id, int pri)
   uc->thread_context.uc_stack.ss_sp = malloc(sz);
   uc->thread_context.uc_stack.ss_size = sz;
   uc->thread_context.uc_stack.ss_flags = 0;
-  makecontext(&uc->thread_context, fct, 1, id);
+  makecontext(&uc->thread_context, start_thread, 2, id, fct);
   t_queue(uc);
-  pthread_mutex_unlock(&thread_queue_lock);
+ 
+  sigrelse(SIGALRM);
 }
 
 /* Terminate currently running thread */
 int t_terminate()
 {
+  sighold(SIGALRM);
   tcb *tmp;
 
   tmp = running;
   running = running->next;
   free(tmp);
-
+  
+  sigrelse(SIGALRM);
   setcontext(&running->thread_context);
 }
 
 /* Move currently running thread to end of ready queue, start up next ready thread */
 void t_yield()
 {
-  pthread_mutex_lock(&thread_queue_lock);
+  sighold(SIGALRM);
   tcb *tmp;
 
   tmp = running;
@@ -152,7 +178,9 @@ void t_yield()
 
   if (running == NULL) {
     running = tmp;
-    pthread_mutex_unlock(&thread_queue_lock);
+    end_level0 = running;
+    end_queue = running;
+    sigrelse(SIGALRM);
     return;
   }
 
@@ -163,7 +191,7 @@ void t_yield()
 #endif
 
   t_queue(tmp);
-  pthread_mutex_unlock(&thread_queue_lock);
 
   swapcontext(&tmp->thread_context, &running->thread_context);
+  sigrelse(SIGALRM);
 }
