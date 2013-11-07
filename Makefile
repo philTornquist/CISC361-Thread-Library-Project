@@ -28,4 +28,4 @@ Tests/%: Tests/%.c t_lib.a Makefile
 clean:
 	rm -rf t_lib.a $(LIBOBJS) $(patsubst Tests/%.c, Tests/%, $(wildcard Tests/*.c))
 
-.PHONY: all clean default tests
+.PHONY: clean all default tests
