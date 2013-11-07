@@ -7,6 +7,7 @@
 
 #include "t_lib.h"
 #include <signal.h>
+#include <stdlib.h>
 
 #define LEVEL_2_QUEUE 1
 #define ROUND_ROBIN 1
@@ -98,7 +99,7 @@ void t_init()
     printf("Couldn't setup signal handler\n");
     exit(2);
   }
-  ualarm(1,100);
+  ualarm(1,1);
 #endif
 }
 
@@ -116,6 +117,7 @@ void t_shutdown()
   while (running != NULL) {
     tcb *tmp = running;
     running = running->next;
+    free(tmp->thread_context.uc_stack.ss_sp);
     free(tmp);
   }
 }
@@ -127,6 +129,11 @@ void start_thread(int id, void (*fct)(int))
 {
 	sigrelse(SIGALRM);
 	fct(id);
+
+  if (t_terminate() == -1) {
+    t_shutdown();
+    exit(0);
+  }
 }
 
 /* 
@@ -145,9 +152,6 @@ int t_create(void (*fct)(void), int id, int pri)
   uc->thread_id = id;
 
   getcontext(&uc->thread_context);
-  //uc->thread_context.uc_stack.ss_sp = mmap(0, sz,
-  //     PROT_READ | PROT_WRITE | PROT_EXEC,
- //      MAP_PRIVATE | MAP_ANON, -1, 0);
   uc->thread_context.uc_stack.ss_sp = malloc(sz);
   uc->thread_context.uc_stack.ss_size = sz;
   uc->thread_context.uc_stack.ss_flags = 0;
@@ -163,14 +167,16 @@ int t_create(void (*fct)(void), int id, int pri)
  */
 int t_terminate()
 {
-  sighold(SIGALRM);
-  tcb *tmp;
+  if (running->next == NULL)
+    return -1;
 
-  tmp = running;
+  sighold(SIGALRM);
+
+  tcb *tmp = running;
   running = running->next;
+  free(tmp->thread_context.uc_stack.ss_sp);
   free(tmp);
-  
-  sigrelse(SIGALRM);
+
   setcontext(&running->thread_context);
 }
 
@@ -188,7 +194,9 @@ void t_yield()
 
   if (running == NULL) {
     running = tmp;
+    #ifdef LEVEL_2_QUEUE
     end_level0 = running;
+    #endif
     end_queue = running;
     sigrelse(SIGALRM);
     return;
