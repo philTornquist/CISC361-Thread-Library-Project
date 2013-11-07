@@ -23,18 +23,24 @@ typedef struct tcb tcb;
 tcb *running;
 tcb *end_queue;
 
-void sig_hand(int signo)
-{
-printf("signal\n");
-ualarm(10,10);
-t_yield();
-}
-
 #ifdef LEVEL_2_QUEUE
 tcb *end_level0;
 #endif
 
-/* Add thread to end of ready queue */
+/* 
+ * sig_hand()
+ */
+void sig_hand(int signo)
+{
+  printf("signal\n");
+  ualarm(10,10);
+  t_yield();
+}
+
+/*
+ * t_queue()
+ * Add thread to end of ready queue 
+ */
 void t_queue(tcb *thread)
 {
 #ifdef LEVEL_2_QUEUE
@@ -72,7 +78,10 @@ void t_queue(tcb *thread)
 #endif
 }
 
-/* Initialize thread library */
+/* 
+ * t_init()
+ * Initialize thread library 
+ */
 void t_init()
 {
   tcb *tmp;
@@ -106,7 +115,10 @@ void t_init()
 #endif
 }
 
-/* Shut down thread library */
+/* 
+ * t_shutdown()
+ * Shut down thread library 
+ */
 void t_shutdown()
 {
 #ifdef ROUND_ROBIN
@@ -121,14 +133,20 @@ void t_shutdown()
   }
 }
 
+/* 
+ * start_thread()
+ */
 void start_thread(int id, void (*fct)(int))
 {
-printf("thread created\n");
+  printf("thread created\n");
 	sigrelse(SIGALRM);
 	fct(id);
 }
 
-/* Create new thread */
+/* 
+ * t_create()
+ * Create new thread 
+ */
 int t_create(void (*fct)(void), int id, int pri)
 {
   sighold(SIGALRM);
@@ -153,7 +171,10 @@ int t_create(void (*fct)(void), int id, int pri)
   sigrelse(SIGALRM);
 }
 
-/* Terminate currently running thread */
+/* 
+ * t_terminate()
+ * Terminate currently running thread 
+ */
 int t_terminate()
 {
   sighold(SIGALRM);
@@ -167,7 +188,10 @@ int t_terminate()
   setcontext(&running->thread_context);
 }
 
-/* Move currently running thread to end of ready queue, start up next ready thread */
+/* 
+ * t_yield()
+ * Move currently running thread to end of ready queue, start up next ready thread 
+ */
 void t_yield()
 {
   sighold(SIGALRM);

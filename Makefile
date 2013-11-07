@@ -5,11 +5,8 @@
 
 CC = gcc
 CFLAGS = -g -I.. -I. -LEVEL_2_QUEUE
-
-# specify the object files
-LIBOBJS = t_lib.o 
-# specify the source files
-LIBSRCS = t_lib.c
+LIBOBJS = t_lib.o
+LIBDEPS = t_lib.h
 
 default: t_lib.a
 
@@ -19,8 +16,8 @@ t_lib.a: $(LIBOBJS) Makefile
 	ar rcs t_lib.a $(LIBOBJS)	
 # ar creates the static thread library
 
-t_lib.o: t_lib.c t_lib.h Makefile
-	$(CC) $(CFLAGS) -c t_lib.c
+%.o: %.c $(LIBDEPS) Makefile
+	$(CC) $(CFLAGS) -c $<
 
 # make all test files located in "Tests" directory
 tests: $(patsubst Tests/%.c, Tests/%, $(wildcard Tests/*.c)) t_lib.a Makefile
