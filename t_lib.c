@@ -32,8 +32,6 @@ tcb *end_level0;
  */
 void sig_hand(int signo)
 {
-  printf("signal\n");
-  ualarm(10,10);
   t_yield();
 }
 
@@ -59,17 +57,6 @@ void t_queue(tcb *thread)
     end_queue = thread;
     end_queue->next = NULL;
   }
-  
-  tcb* tmp = running;
-  while (tmp != NULL)
-  {
-  	printf("%i,%i -> ", tmp->thread_id, tmp->thread_priority);
-  	if (tmp == end_level0)
-  		printf("end level 0");
-  	printf("\n");
-  	tmp = tmp->next;
-  }
-  printf("End Queue Post\n\n");
 
 #else
   end_queue->next = thread;
@@ -102,7 +89,7 @@ void t_init()
 #ifdef ROUND_ROBIN
   struct sigaction  act, oact;
 
-  act.sa_handler = sig_hand;
+  act.sa_handler = t_yield;
   sigemptyset(&act.sa_mask);
   act.sa_flags = 0;
   act.sa_flags |= SA_INTERRUPT;
@@ -111,7 +98,7 @@ void t_init()
     printf("Couldn't setup signal handler\n");
     exit(2);
   }
-  ualarm(10,10);
+  ualarm(1,100);
 #endif
 }
 
@@ -138,7 +125,6 @@ void t_shutdown()
  */
 void start_thread(int id, void (*fct)(int))
 {
-  printf("thread created\n");
 	sigrelse(SIGALRM);
 	fct(id);
 }
