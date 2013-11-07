@@ -61,6 +61,15 @@ void t_shutdown()
   }
 }
 
+/*
+ * start_thread()
+ */
+void start_thread(int id, void (*fct)(int))
+{
+  fct(id);
+  t_terminate();
+}
+
 /* 
  * t_create()
  * Create new thread 
@@ -75,13 +84,10 @@ void t_create(void (*fct)(void), int id, int pri)
   uc->thread_id = id;
 
   getcontext(&uc->thread_context);
-  // uc->thread_context.uc_stack.ss_sp = mmap(0, sz,
-  //      PROT_READ | PROT_WRITE | PROT_EXEC,
-  //      MAP_PRIVATE | MAP_ANON, -1, 0);
   uc->thread_context.uc_stack.ss_sp = malloc(sz);
   uc->thread_context.uc_stack.ss_size = sz;
   uc->thread_context.uc_stack.ss_flags = 0;
-  makecontext(&uc->thread_context, fct, 1, id);
+  makecontext(&uc->thread_context, start_thread, 2, id, fct);
 
   t_queue(uc);
 }
