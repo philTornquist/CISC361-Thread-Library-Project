@@ -6,7 +6,6 @@
 */
 
 #include "t_lib.h"
-#include <signal.h>
 
 struct tcb {
   int         thread_id;
@@ -44,8 +43,8 @@ void t_init()
 
   /* let tmp be the context of main() */
   getcontext(&tmp->thread_context);
-  running = tmp;
 
+  running = tmp;
   end_queue = tmp;
 }
 
@@ -66,7 +65,7 @@ void t_shutdown()
  * t_create()
  * Create new thread 
  */
-int t_create(void (*fct)(void), int id, int pri)
+void t_create(void (*fct)(void), int id, int pri)
 {
   size_t sz = 0x10000;
 
@@ -76,13 +75,14 @@ int t_create(void (*fct)(void), int id, int pri)
   uc->thread_id = id;
 
   getcontext(&uc->thread_context);
-  //uc->thread_context.uc_stack.ss_sp = mmap(0, sz,
-  //     PROT_READ | PROT_WRITE | PROT_EXEC,
-  //     MAP_PRIVATE | MAP_ANON, -1, 0);
+  // uc->thread_context.uc_stack.ss_sp = mmap(0, sz,
+  //      PROT_READ | PROT_WRITE | PROT_EXEC,
+  //      MAP_PRIVATE | MAP_ANON, -1, 0);
   uc->thread_context.uc_stack.ss_sp = malloc(sz);
   uc->thread_context.uc_stack.ss_size = sz;
   uc->thread_context.uc_stack.ss_flags = 0;
-  makecontext(&uc->thread_context, start_thread, 2, id, fct);
+  makecontext(&uc->thread_context, fct, 1, id);
+
   t_queue(uc);
 }
 
@@ -92,10 +92,15 @@ int t_create(void (*fct)(void), int id, int pri)
  */
 int t_terminate()
 {
-  tcb *tmp;
-
-  tmp = running;
+  tcb *tmp = running;
   running = running->next;
+
+  if (running == NULL) {
+    running = tmp;
+    end_queue = running;
+    return -1;
+  }
+
   free(tmp);
   
   setcontext(&running->thread_context);
@@ -107,9 +112,7 @@ int t_terminate()
  */
 void t_yield()
 {
-  tcb *tmp;
-
-  tmp = running;
+  tcb *tmp = running;
   running = running->next;
 
   if (running == NULL) {
