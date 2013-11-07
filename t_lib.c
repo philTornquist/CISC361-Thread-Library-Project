@@ -9,8 +9,8 @@
 #include <signal.h>
 #include <stdlib.h>
 
-#define LEVEL_2_QUEUE 1
-#define ROUND_ROBIN 1
+#define LEVEL_2_QUEUE 
+#define ROUND_ROBIN 
 
 struct tcb {
   int         thread_id;
@@ -167,8 +167,7 @@ int t_create(void (*fct)(void), int id, int pri)
  */
 int t_terminate()
 {
-  if (running->next == NULL)
-    return -1;
+  if (running->next == NULL) return -1;
 
   sighold(SIGALRM);
 
