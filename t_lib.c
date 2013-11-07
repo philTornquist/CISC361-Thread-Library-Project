@@ -6,6 +6,7 @@
 */
 
 #include "t_lib.h"
+#include <stdlib.h>
 
 struct tcb {
   int         thread_id;
@@ -57,6 +58,7 @@ void t_shutdown()
   while (running != NULL) {
     tcb *tmp = running;
     running = running->next;
+    free(tmp->thread_context.uc_stack.ss_sp);
     free(tmp);
   }
 }
@@ -67,7 +69,10 @@ void t_shutdown()
 void start_thread(int id, void (*fct)(int))
 {
   fct(id);
-  t_terminate();
+  if (t_terminate() == -1) {
+    t_shutdown();
+    exit(0);
+  }
 }
 
 /* 
@@ -107,6 +112,7 @@ int t_terminate()
     return -1;
   }
 
+  free(tmp->thread_context.uc_stack.ss_sp);
   free(tmp);
   
   setcontext(&running->thread_context);
