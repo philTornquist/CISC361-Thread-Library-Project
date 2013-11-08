@@ -19,7 +19,7 @@ typedef struct tcb tcb;
 
 tcb *running;          //  Running thread and [running->next] is the start of the ready queue
 tcb *end_queue;        //  End of ready queue
-tcb *to_delete = NULL;         // 
+tcb *to_delete = NULL; //  Terminated thread awaiting memory freeing
 
 /*
  * t_queue()
