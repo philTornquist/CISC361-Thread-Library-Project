@@ -32,6 +32,9 @@ void t_queue(tcb *thread)
   end_queue->next = NULL;
 }
 
+/* 
+ * t_free()
+ */
 void t_free(tcb *thread)
 {
   if(to_delete != NULL)
@@ -117,14 +120,10 @@ void t_create(void (*fct)(void), int id, int pri)
  */
 int t_terminate()
 {
+  if (running->next == NULL) return -1;
+
   tcb *tmp = running;
   running = running->next;
-
-  if (running == NULL) {
-    running = tmp;
-    end_queue = running;
-    return -1;
-  }
 
   t_free(tmp);
   
