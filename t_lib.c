@@ -19,6 +19,7 @@ typedef struct tcb tcb;
 
 tcb *running;          //  Running thread and [running->next] is the start of the ready queue
 tcb *end_queue;        //  End of ready queue
+tcb *to_delete = NULL;         // 
 
 /*
  * t_queue()
@@ -29,6 +30,16 @@ void t_queue(tcb *thread)
   end_queue->next = thread;
   end_queue = thread;
   end_queue->next = NULL;
+}
+
+void t_free(tcb *thread)
+{
+  if(to_delete != NULL)
+  {
+    free(to_delete->thread_context.uc_stack.ss_sp);
+    free(to_delete);
+  }
+  to_delete = thread;
 }
 
 /* 
@@ -55,6 +66,7 @@ void t_init()
  */
 void t_shutdown()
 {
+  t_free(NULL);
   while (running != NULL) {
     tcb *tmp = running;
     running = running->next;
@@ -114,8 +126,7 @@ int t_terminate()
     return -1;
   }
 
-  free(tmp->thread_context.uc_stack.ss_sp);
-  free(tmp);
+  t_free(tmp);
   
   setcontext(&running->thread_context);
 }
