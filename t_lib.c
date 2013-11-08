@@ -17,8 +17,8 @@ struct tcb {
 
 typedef struct tcb tcb;
 
-tcb *running;
-tcb *end_queue;
+tcb *running;          //  Running thread and [running->next] is the start of the ready queue
+tcb *end_queue;        //  End of ready queue
 
 /*
  * t_queue()
@@ -69,6 +69,8 @@ void t_shutdown()
 void start_thread(int id, void (*fct)(int))
 {
   fct(id);
+  //  If this is the last thread alive then terminating it
+  //  then shutdown the thread library
   if (t_terminate() == -1) {
     t_shutdown();
     exit(0);
