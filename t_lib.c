@@ -6,7 +6,11 @@
 */
 
 #include "t_lib.h"
+#include <signal.h>
 #include <stdlib.h>
+
+#define LEVEL_2_QUEUE 
+#define ROUND_ROBIN 
 
 struct tcb {
   int         thread_id;
@@ -21,15 +25,46 @@ tcb *running;          //  Running thread and [running->next] is the start of th
 tcb *end_queue;        //  End of ready queue
 tcb *to_delete;
 
+#ifdef LEVEL_2_QUEUE
+tcb *end_level0;
+#endif
+
+/* 
+ * sig_hand()
+ */
+void sig_hand(int signo)
+{
+  t_yield();
+}
+
 /*
  * t_queue()
  * Add thread to end of ready queue 
  */
 void t_queue(tcb *thread)
 {
+#ifdef LEVEL_2_QUEUE
+  
+  if (thread->thread_priority == 0)
+  {
+    thread->next = end_level0->next;
+    end_level0->next = thread;
+    end_level0 = thread;
+
+    if (thread->next == NULL) end_queue = end_level0;
+  }
+  else if (thread->thread_priority == 1)
+  {
+    end_queue->next = thread;
+    end_queue = thread;
+    end_queue->next = NULL;
+  }
+
+#else
   end_queue->next = thread;
   end_queue = thread;
   end_queue->next = NULL;
+#endif
 }
 
 /* 
@@ -40,10 +75,10 @@ void t_free(tcb *t)
   tcb *thread = to_delete;
   to_delete = t;
   if (thread != NULL)
-{  
+  {  
   free(thread->thread_context.uc_stack.ss_sp);
   free(thread);
-}
+  }
 }
 
 /* 
@@ -62,6 +97,25 @@ void t_init()
  
   running = tmp;
   end_queue = tmp;
+
+#ifdef LEVEL_2_QUEUE
+  end_level0 = running;
+#endif
+
+#ifdef ROUND_ROBIN
+  struct sigaction  act, oact;
+
+  act.sa_handler = t_yield;
+  sigemptyset(&act.sa_mask);
+  act.sa_flags = 0;
+  act.sa_flags |= SA_INTERRUPT;
+  if (sigaction(SIGALRM, &act, &oact) < 0)
+  {
+    printf("Couldn't setup signal handler\n");
+    exit(2);
+  }
+  ualarm(1,1);
+#endif
 }
 
 /* 
@@ -85,8 +139,10 @@ void t_shutdown()
  * start_thread()
  */
 void start_thread(int id, void (*fct)(int))
-{
+{ 
+  sigrelse(SIGALRM);
   fct(id);
+
   //  If this is the last thread alive then terminating it
   //  then shutdown the thread library
   if (t_terminate() == -1) {
@@ -123,6 +179,7 @@ void t_create(void (*fct)(void), int id, int pri)
  */
 int t_terminate()
 {
+  sighold(SIGALRM);
   if (running->next == NULL) return -1;
 
   tcb *tmp = running;
@@ -144,6 +201,9 @@ void t_yield()
 
   if (running == NULL) {
     running = tmp;
+    #ifdef LEVEL_2_QUEUE
+    end_level0 = running;
+    #endif
     end_queue = running;
     return;
   }
@@ -151,4 +211,5 @@ void t_yield()
   t_queue(tmp);
 
   swapcontext(&tmp->thread_context, &running->thread_context);
+  sigrelse(SIGALRM);
 }
