@@ -19,5 +19,6 @@ void t_init();
 void t_shutdown();
 int t_terminate();
 void t_yield();
+void t_block(tcb **queue_start, tcb **queue_end);
 
 #endif /* T_LIB_H */

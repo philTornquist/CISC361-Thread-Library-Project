@@ -228,3 +228,40 @@ void t_yield()
   ualarm(TIME_SLICE, 0);
 #endif
 }
+
+/*
+ * t_block()
+ * Stops the current running thread and adds it to the given queue
+ */
+void t_block(tcb **queue_start, tcb **queue_end)
+{
+#ifdef ROUND_ROBIN
+  sighold(SIGALRM);
+  ualarm(0,0);
+#endif
+
+  if (running->next == NULL)
+  {
+    printf("DEADLOCK");
+  }
+
+  if (*queue_start == NULL)
+  {
+    *queue_start = running;
+    *queue_end = running;
+  }
+  else
+  {
+    *queue_end->next = running;
+    *queue_end = running;
+  }
+
+  tcb *tmp = running;
+  running = running->next;
+
+  swapcontext(&tmp->thread_context, &running->thread_context);
+#ifdef ROUND_ROBIN
+  sigrelse(SIGALRM);
+  ualarm(TIME_SLICE, 0);
+#endif
+}
