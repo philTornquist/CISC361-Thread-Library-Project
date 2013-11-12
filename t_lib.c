@@ -199,7 +199,10 @@ int t_terminate()
  */
 void t_yield()
 {
+#ifdef ROUND_ROBIN
   sighold(SIGALRM);
+  ualarm(0, 0);
+#endif
   tcb *tmp = running;
   running = running->next;
 
