@@ -5,6 +5,7 @@ int sem_init(sem_t **sp, int sem_count)
 {
   *sp = malloc(sizeof(sem_t));
   (*sp)->sem_count = sem_count;
+  (*sp)->block_queue = NULL;
 }
 
 void sem_wait(sem_t *sp)
@@ -23,9 +24,9 @@ void sem_signal(sem_t *sp)
   sp->sem_count++;
   if (sp->sem_count <= 0)
   {
-    if (sp->block_queue == NULL) {printf("NULL");fflush(stdout);}
-    t_queue(sp->block_queue);
+    tcb *tmp = sp->block_queue;
     sp->block_queue = sp->block_queue->next;
+    t_queue(tmp);
   }
   sigrelse(SIGALRM);
 }

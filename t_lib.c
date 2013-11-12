@@ -199,6 +199,7 @@ int t_terminate()
  */
 void t_yield()
 {
+  sighold(SIGALRM);
   tcb *tmp = running;
   running = running->next;
 
@@ -249,6 +250,7 @@ void t_block(tcb **queue_start, tcb **queue_end)
 
   tcb *tmp = running;
   running = running->next;
+  tmp->next = NULL;
 
   swapcontext(&tmp->thread_context, &running->thread_context);
 #ifdef ROUND_ROBIN
