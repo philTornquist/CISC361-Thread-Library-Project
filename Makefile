@@ -1,5 +1,5 @@
-# Phil Tornquist
-# Sean Moir
+# Phil Tornquist - 701526283
+# Sean Moir      - 701411108
 # CISC361-010
 # Project 4
 
