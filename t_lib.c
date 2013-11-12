@@ -208,6 +208,7 @@ int t_terminate()
  */
 void t_yield()
 {
+  sighold(SIGALRM);
   tcb *tmp = running;
   running = running->next;
 
