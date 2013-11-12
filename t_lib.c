@@ -13,15 +13,6 @@
 #define LEVEL_2_QUEUE 
 #define ROUND_ROBIN 
 
-struct tcb {
-  int         thread_id;
-  int         thread_priority;
-  ucontext_t  thread_context;
-  struct tcb *next;
-};
-
-typedef struct tcb tcb;
-
 tcb *running;          //  Running thread and [running->next] is the start of the ready queue
 tcb *end_queue;        //  End of ready queue
 tcb *to_delete;
@@ -252,7 +243,7 @@ void t_block(tcb **queue_start, tcb **queue_end)
   }
   else
   {
-    *queue_end->next = running;
+    (*queue_end)->next = running;
     *queue_end = running;
   }
 

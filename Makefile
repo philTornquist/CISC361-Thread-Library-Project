@@ -4,9 +4,9 @@
 # Project 4
 
 CC = gcc
-CFLAGS = -g -I.. -I. -LEVEL_2_QUEUE
-LIBOBJS = t_lib.o
-LIBDEPS = t_lib.h
+CFLAGS = -g -I.. -I.
+LIBOBJS = t_lib.o sem.o
+LIBDEPS = t_lib.h sem.h
 
 default: t_lib.a
 

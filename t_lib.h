@@ -13,6 +13,16 @@
 #include <ucontext.h>
 #include <sys/mman.h>
 
+struct tcb {
+  int         thread_id;
+  int         thread_priority;
+  ucontext_t  thread_context;
+  struct tcb *next;
+};
+
+typedef struct tcb tcb;
+
+
 /* Thread library function prototypes */
 void t_create(void (*fct)(void), int id, int pri);
 void t_init();
