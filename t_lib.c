@@ -9,6 +9,7 @@
 #include <signal.h>
 #include <stdlib.h>
 
+#define TIME_SLICE 100
 #define LEVEL_2_QUEUE 
 #define ROUND_ROBIN 
 
@@ -114,7 +115,7 @@ void t_init()
     printf("Couldn't setup signal handler\n");
     exit(2);
   }
-  ualarm(1,1);
+  ualarm(TIME_SLICE,0);
 #endif
 }
 
@@ -124,6 +125,9 @@ void t_init()
  */
 void t_shutdown()
 {
+#ifdef ROUND_ROBIN
+  ualarm(0,0);
+#endif
   tcb *tmp = running;
   running = running->next;
   free(tmp);
@@ -140,7 +144,10 @@ void t_shutdown()
  */
 void start_thread(int id, void (*fct)(int))
 { 
+#ifdef ROUND_ROBIN
   sigrelse(SIGALRM);
+  ualarm(TIME_SLICE, 0);
+#endif
   fct(id);
 
   //  If this is the last thread alive then terminating it
@@ -157,6 +164,7 @@ void start_thread(int id, void (*fct)(int))
  */
 void t_create(void (*fct)(void), int id, int pri)
 {
+  sighold(SIGALRM);
   size_t sz = 0x10000;
 
   tcb *uc;
@@ -171,6 +179,7 @@ void t_create(void (*fct)(void), int id, int pri)
   makecontext(&uc->thread_context, start_thread, 2, id, fct);
 
   t_queue(uc);
+  sigrelse(SIGALRM);
 }
 
 /* 
@@ -179,7 +188,10 @@ void t_create(void (*fct)(void), int id, int pri)
  */
 int t_terminate()
 {
+#ifdef ROUND_ROBIN
   sighold(SIGALRM);
+  ualarm(0,0);
+#endif
   if (running->next == NULL) return -1;
 
   tcb *tmp = running;
@@ -211,5 +223,8 @@ void t_yield()
   t_queue(tmp);
 
   swapcontext(&tmp->thread_context, &running->thread_context);
+#ifdef ROUND_ROBIN
   sigrelse(SIGALRM);
+  ualarm(TIME_SLICE, 0);
+#endif
 }
