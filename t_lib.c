@@ -92,7 +92,6 @@ void t_init()
   act.sa_handler = t_yield;
   sigemptyset(&act.sa_mask);
   act.sa_flags = 0;
-  act.sa_flags |= SA_INTERRUPT;
   if (sigaction(SIGALRM, &act, &oact) < 0)
   {
     printf("Couldn't setup signal handler\n");
