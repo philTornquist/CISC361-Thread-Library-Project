@@ -21,14 +21,6 @@ tcb *to_delete;
 tcb *end_level0;
 #endif
 
-/* 
- * sig_hand()
- */
-void sig_hand(int signo)
-{
-  t_yield();
-}
-
 /*
  * t_queue()
  * Add thread to end of ready queue 
@@ -214,6 +206,8 @@ void t_yield()
     end_queue = running;
     return;
   }
+  if (tmp == end_level0)
+    end_level0 = running;
 
   t_queue(tmp);
 
