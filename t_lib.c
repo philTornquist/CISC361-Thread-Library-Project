@@ -11,7 +11,7 @@
 
 #define TIME_SLICE 100
 #define LEVEL_2_QUEUE 
-#define ROUND_ROBIN 
+//#define ROUND_ROBIN 
 
 tcb *running;          //  Running thread and [running->next] is the start of the ready queue
 tcb *end_queue;        //  End of ready queue

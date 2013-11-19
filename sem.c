@@ -28,7 +28,8 @@ void sem_signal(sem_t *sp)
     sp->block_queue = sp->block_queue->next;
     t_queue(tmp);
   }
-  sigrelse(SIGALRM);
+  //sigrelse(SIGALRM);
+  t_yield();
 }
 
 void sem_destroy(sem_t **sp)
