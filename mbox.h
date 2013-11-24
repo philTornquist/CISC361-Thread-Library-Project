@@ -8,6 +8,8 @@
 #ifndef MBOX_H
 #define MBOX_H
 
+#include "sem.h"
+
 typedef struct {
 	char *message;     // copy of the message 
 	int  len;          // length of the message 

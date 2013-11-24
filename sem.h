@@ -1,3 +1,5 @@
+#include "t_lib.h"
+
 struct sem_t {
   int sem_count;
   tcb *block_queue;

@@ -6,23 +6,23 @@
 */
 
 #include "mbox.h"
-#include "sem.h"
 
 int mbox_create(mbox **mb)
 {
 	*mb = malloc(sizeof(mbox));
-	*mb->msg = NULL;
-	return sem_init(&*mb->msg_sem, 1);
+	(*mb)->msg = NULL;
+	return sem_init(&(*mb)->mbox_sem, 1);
 }
 
 void mbox_destroy(mbox **mb)
 {
-
+	sem_destroy(&(*mb)->mbox_sem);
+	free(*mb);
 }
 
 void mbox_deposit(mbox *mb, char *msg, int len)
 {
-
+	
 }
 
 void mbox_block_deposit(mbox *mb, char *msg, int len)
