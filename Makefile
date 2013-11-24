@@ -5,8 +5,8 @@
 
 CC = gcc
 CFLAGS = -g -I.. -I.
-LIBOBJS = t_lib.o sem.o
-LIBDEPS = t_lib.h sem.h
+LIBOBJS = t_lib.o sem.o mbox.o
+LIBDEPS = t_lib.h sem.h mbox.h
 
 default: t_lib.a
 
