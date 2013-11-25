@@ -19,8 +19,20 @@ typedef struct {
 	sem_t *blocked;
 } messageNode;
 
+struct receiveBlock {
+	sem_t *block;
+	int sender;
+	int *len;
+	int *tid;
+	char *msg;
+	struct receiveBlock *next;
+};
+typedef struct receiveBlock receiveBlock;
+
 typedef struct {
 	struct messageNode  *msg;       // message queue
+	receiveBlock *rcv;
+	int id;
 	sem_t               *mbox_sem;
 } mbox;
 

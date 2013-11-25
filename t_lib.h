@@ -31,4 +31,6 @@ int t_terminate();
 void t_yield();
 void t_block(tcb **queue_start, tcb **queue_end);
 
+extern tcb *running;
+
 #endif /* T_LIB_H */
