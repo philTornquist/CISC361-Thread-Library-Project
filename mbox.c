@@ -13,6 +13,7 @@
 int mbox_create(mbox **mb)
 {
 	*mb = malloc(sizeof(mbox));
+	(*mb)->rcv = NULL;
 	(*mb)->msg = NULL;
 	(*mb)->id = 0;
 	return sem_init(&(*mb)->mbox_sem, 1);
@@ -104,6 +105,7 @@ void mbox_withdraw_full(mbox *mb, int *tid, char *msg, int *len, int block)
 	if (mb->msg == NULL) {
 		*tid = 0;
 		*len = 0;
+		sem_signal(mb->mbox_sem);
 		return;
 	}
 	if (*tid == 0) {
@@ -111,6 +113,8 @@ void mbox_withdraw_full(mbox *mb, int *tid, char *msg, int *len, int block)
 		*tid = mbmsg->sender;
 		strcpy(msg, mbmsg->message);
 		*len = mbmsg->len;
+		mb->msg = mbmsg->next;
+		sem_signal(mb->mbox_sem);
 		return;
 	}
 
@@ -141,7 +145,6 @@ void mbox_withdraw_full(mbox *mb, int *tid, char *msg, int *len, int block)
 		last = &current->next;
 		current = current->next;
 	}
-	
 	if (block)
 	{
 		receiveBlock *rb = malloc(sizeof(receiveBlock));
@@ -175,7 +178,6 @@ void mbox_withdraw_full(mbox *mb, int *tid, char *msg, int *len, int block)
 
 void mbox_withdraw(mbox *mb, char *msg, int *len)
 {
-	printf("Withdraw\n");
 	int tid = 0;
 	mbox_withdraw_full(mb, &tid, msg, len, 0);
 }

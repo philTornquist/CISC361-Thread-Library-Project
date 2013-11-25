@@ -33,7 +33,6 @@ void consumer(int id)
     mbox_withdraw(mb, mesg, &len);
     printf("Message from mailbox: [%s]\n", mesg);
   }
-
   t_terminate();
 }
 
@@ -46,8 +45,10 @@ int main(void) {
    t_create(producer, 2, 1);
    t_create(consumer, 3, 1);  
 
-int i = 0;
-for(; i< 80; i++)
+   t_yield();
+   t_yield();
+   t_yield();
+   t_yield();
    t_yield();
    mbox_destroy(&mb);
 
