@@ -62,7 +62,32 @@ void mbox_withdraw(mbox *mb, char *msg, int *len)
 
 void mbox_tid_withdraw(mbox *mb, int *tid, char *msg, int *len)
 {
-	
+	if (mb->msg == NULL) {
+		*tid = 0;
+		*len = 0;
+		return;
+	}
+	if (*tid == 0) {
+		messageNode *mbmsg = mb->msg;
+		*tid = mbmsg->sender;
+		strcpy(msg, mbmsg->message);
+		*len = mbmsg->len;
+		return;
+	}
+
+	messageNode *current = mb->msg;
+
+	while (current != NULL) {
+		if (current->sender == *tid) {
+		strcpy(msg, current->message);
+		*len = current->len;
+		return;
+		}
+		current = current->next;
+	}
+
+	*tid = 0;
+	*len = 0;
 }
 
 void mbox_block_withdraw(mbox *mb, int *tid, char *msg, int *len)
