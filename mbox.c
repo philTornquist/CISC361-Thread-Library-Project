@@ -28,36 +28,33 @@ void mbox_destroy(mbox **mb)
 void mbox_deposit_full(mbox *mb, char *msg, int len, int block)
 {
 	sem_wait(mb->mbox_sem);	
+	int sender = running->thread_id;
 
 	receiveBlock *rb = mb->rcv;
-	if (rb != NULL) 
+	receiveBlock **last = &mb->rcv;
+	while (rb != NULL)
 	{
-
-		receiveBlock **last = &mb->rcv;
-		while (rb != NULL)
+		if (rb->sender == 0 || rb->sender == sender)
 		{
-			if (rb->sender == 0 || rb->sender == mb->id)
+			strcpy(rb->msg, msg);
+			*rb->len = len;
+			*rb->tid = running->thread_id;
+			
+			*last = rb->next;
+
+			sem_signal(mb->mbox_sem);
+
+			sem_t *sp = rb->block;
+			free(rb);
+			if (sp != NULL)
 			{
-				strcpy(rb->msg, msg);
-				*rb->len = len;
-				*rb->tid = running->thread_id;
-				
-				*last = rb->next;
-	
-				sem_signal(mb->mbox_sem);
-	
-				free(rb);
-				sem_t *sp = rb->block;
-				if (sp != NULL)
-				{
-					sem_signal(sp);
-					sem_destroy(&sp);	
-				}
-				return;
+				sem_signal(sp);
+				sem_destroy(&sp);	
 			}
-			last = &rb->next;
-			rb = rb->next;		
+			return;
 		}
+		last = &rb->next;
+		rb = rb->next;		
 	}
 
 	messageNode *tmp = malloc(sizeof(messageNode));
@@ -66,14 +63,8 @@ void mbox_deposit_full(mbox *mb, char *msg, int len, int block)
 	tmp->len = len;
 	tmp->next = NULL;
 	tmp->blocked = NULL;
-	tmp->sender = running->thread_id;
+	tmp->sender = sender;
 	tmp->receiver = mb->id;
-
-	if (block)
-	{
-		sem_init(&tmp->blocked, 0);
-		sem_wait(tmp->blocked);
-	}
 
 	if (mb->msg == NULL) {
 		mb->msg = tmp;
@@ -85,6 +76,13 @@ void mbox_deposit_full(mbox *mb, char *msg, int len, int block)
 	while (end->next != NULL)
 		end = end->next;
 	end->next = tmp;
+	
+	if (block)
+	{
+		sem_init(&tmp->blocked, 0);
+		sem_wait(tmp->blocked);
+	}
+
 	sem_signal(mb->mbox_sem);
 }
 
@@ -102,27 +100,12 @@ void mbox_withdraw_full(mbox *mb, int *tid, char *msg, int *len, int block)
 {
 	sem_wait(mb->mbox_sem);
 	int sender = *tid;
-	if (mb->msg == NULL) {
-		*tid = 0;
-		*len = 0;
-		sem_signal(mb->mbox_sem);
-		return;
-	}
-	if (*tid == 0) {
-		messageNode *mbmsg = mb->msg;
-		*tid = mbmsg->sender;
-		strcpy(msg, mbmsg->message);
-		*len = mbmsg->len;
-		mb->msg = mbmsg->next;
-		sem_signal(mb->mbox_sem);
-		return;
-	}
 
 	messageNode *current = mb->msg;
 	messageNode **last = &mb->msg;
 	while (current != NULL)
 	{
-		if (current->sender == *tid)
+		if (*tid == 0 || current->sender == *tid)
 		{
 			strcpy(msg, current->message);
 			*len = current->len;
