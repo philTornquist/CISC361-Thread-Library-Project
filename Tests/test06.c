@@ -8,6 +8,7 @@
 
 mbox *mb;
 char *msg[2] = {"hello world...", "bye, bye"};
+int term = 1;
 
 void producer(int id) 
 {
@@ -33,6 +34,7 @@ void consumer(int id)
     mbox_withdraw(mb, mesg, &len);
     printf("Message from mailbox: [%s]\n", mesg);
   }
+  term = 0;
   t_terminate();
 }
 
@@ -45,10 +47,7 @@ int main(void) {
    t_create(producer, 2, 1);
    t_create(consumer, 3, 1);  
 
-   t_yield();
-   t_yield();
-   t_yield();
-   t_yield();
+while(term)
    t_yield();
    mbox_destroy(&mb);
 

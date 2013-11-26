@@ -27,4 +27,8 @@ void mbox_withdraw(mbox *mb, char *msg, int *len);
 void mbox_tid_withdraw(mbox *mb, int *tid, char *msg, int *len);
 void mbox_block_withdraw(mbox *mb, int *tid, char *msg, int *len);
 
+void send(int tid, char *msg, int len);
+void receive(int *tid, char *msg, int *len);
 
+void block_send(int tid, char *msg, int len);
+void block_receive(int *tid, char *msg, int *len);

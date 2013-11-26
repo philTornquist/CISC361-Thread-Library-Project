@@ -61,8 +61,8 @@ void mbox_deposit_full(mbox *mb, char *msg, int len, int block)
 	}
 
 	messageNode *tmp = malloc(sizeof(messageNode));
-	tmp->message = malloc(sizeof(char)*len+1);
-	memcpy(tmp->message, msg, len + 1);
+	tmp->message = malloc(sizeof(char)*(len+1));
+	memcpy(tmp->message, msg, sizeof(char) *(len + 1));
 	tmp->len = len;
 	tmp->next = NULL;
 	tmp->blocked = NULL;
@@ -119,7 +119,7 @@ void mbox_withdraw_full(mbox *mb, int *tid, char *msg, int *len, int block)
 	}
 
 	messageNode *current = mb->msg;
-	messageNode **last = &mb->rcv;
+	messageNode **last = &mb->msg;
 	while (current != NULL)
 	{
 		if (current->sender == *tid)

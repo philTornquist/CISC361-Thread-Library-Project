@@ -6,6 +6,8 @@
 phase 4
 */
 
+#include "mbox.h"
+#include "sem.h"
 #include "t_lib.h"
 #include <signal.h>
 #include <stdlib.h>
@@ -21,6 +23,8 @@ tcb *to_delete;
 #ifdef LEVEL_2_QUEUE
 tcb *end_level0;
 #endif
+
+thread_t *aliveThreads = NULL;
 
 /*
  * t_queue()
@@ -61,8 +65,21 @@ void t_free(tcb *t)
   to_delete = t;
   if (thread != NULL)
   {  
-  free(thread->thread_context.uc_stack.ss_sp);
-  free(thread);
+    thread_t *cur = aliveThreads;
+    thread_t **last = &aliveThreads;
+    while (cur != NULL)
+    {
+      if (cur->tcb == thread)
+      {
+        mbox_destroy(&thread->mbox);
+        *last = cur->next;
+        free(cur);
+      }
+      last = &cur->next;
+      cur = cur->next;
+    }
+    free(thread->thread_context.uc_stack.ss_sp);
+    free(thread);
   }
 }
 
@@ -77,11 +94,16 @@ void t_init()
   tmp->next = NULL;
   tmp->thread_priority = 1;
 
+  mbox_create(&tmp->mbox);
+  tmp->mbox->id = 0;
+
   /* let tmp be the context of main() */
   getcontext(&tmp->thread_context);
  
   running = tmp;
   end_queue = tmp;
+
+  addThread(tmp);
 
 #ifdef LEVEL_2_QUEUE
   end_level0 = running;
@@ -154,6 +176,11 @@ void t_create(void (*fct)(void), int id, int pri)
   uc = (tcb *) malloc(sizeof(tcb));
   uc->thread_priority = pri;
   uc->thread_id = id;
+  
+  mbox_create(&uc->mbox);
+  uc->mbox->id = id;
+
+  addThread(uc);
 
   getcontext(&uc->thread_context);
   uc->thread_context.uc_stack.ss_sp = malloc(sz);
@@ -254,4 +281,51 @@ void t_block(tcb **queue_start, tcb **queue_end)
   sigrelse(SIGALRM);
   ualarm(TIME_SLICE, 0);
 #endif
+}
+
+void addThread(tcb *tcb)
+{
+  thread_t *newThread = malloc(sizeof(thread_t));
+  newThread->tcb = tcb;
+  newThread->next = aliveThreads;
+  aliveThreads = newThread;
+}
+
+tcb *findTID(int tid)
+{
+  thread_t *cur = aliveThreads;
+  while (cur != NULL)
+  {
+    if (cur->tcb->thread_id == tid) return cur->tcb;
+    cur = cur->next;
+  }
+  return NULL;
+}
+
+void send(int tid, char *msg, int len)
+{
+  tcb *thread = findTID(tid);
+  if (thread != NULL)
+  {
+    mbox_deposit(thread->mbox, msg, len);
+  }
+}
+
+void block_send(int tid, char *msg, int len)
+{
+  tcb *thread = findTID(tid);
+  if (thread != NULL)
+  {
+    mbox_block_deposit(thread->mbox, msg, len);
+  }
+}
+
+void receive(int *tid, char *msg, int *len)
+{
+  mbox_tid_withdraw(running->mbox, tid, msg, len);
+}
+
+void block_receive(int *tid, char *msg, int *len)
+{
+  mbox_block_withdraw(running->mbox, tid, msg, len);
 }

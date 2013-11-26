@@ -8,16 +8,16 @@
 #ifndef MBOX_H
 #define MBOX_H
 
-#include "sem.h"
+#include "types.h"
 
-typedef struct {
+struct messageNode{
 	char *message;     // copy of the message 
 	int  len;          // length of the message 
 	int  sender;       // TID of sender thread 
 	int  receiver;     // TID of receiver thread 
-	struct messageNode *next; // pointer to next node 
+	messageNode *next; // pointer to next node 
 	sem_t *blocked;
-} messageNode;
+};
 
 struct receiveBlock {
 	sem_t *block;
@@ -25,16 +25,15 @@ struct receiveBlock {
 	int *len;
 	int *tid;
 	char *msg;
-	struct receiveBlock *next;
+	receiveBlock *next;
 };
-typedef struct receiveBlock receiveBlock;
 
-typedef struct {
-	struct messageNode  *msg;       // message queue
+struct mbox{
+	messageNode  *msg;       // message queue
 	receiveBlock *rcv;
 	int id;
 	sem_t               *mbox_sem;
-} mbox;
+};
 
 int mbox_create(mbox **mb);
 void mbox_destroy(mbox **mb);
